@@ -63,7 +63,8 @@ library(caret,quietly = TRUE)
 mod_class<- rpart(classe ~ ., data=train3, method="class")
 predicted_cf <- predict(mod_class, val[,-54], type="class")
 #Check confusion Matrix
-confusionMatrix(predicted_cf,val$classe)
+cm<-confusionMatrix(predicted_cf,val$classe)
+cm
 ```
 
 ###(b)Random Forest
@@ -72,7 +73,8 @@ library(randomForest,quietly = TRUE)
 model_rf = randomForest(classe ~ ., data = train3)
 predicted_rf <- predict(model_rf, val[,-54], type="class")
 #Check confusion Matrix
-confusionMatrix(predicted_rf,val$classe)
+cm<-confusionMatrix(predicted_rf,val$classe)
+cm
 ```
 
 ###(c) Generalized Boosted Model
@@ -80,7 +82,8 @@ confusionMatrix(predicted_rf,val$classe)
 control_gbm <- trainControl(method = "repeatedcv", number = 5, repeats = 1)
 model_gbm  <- train(classe ~ ., data=train3, method = "gbm",trControl = control_gbm, verbose =FALSE)
 predict_gbm <- predict(model_gbm, newdata=val[,-54])
-confusionMatrix(predict_gbm, val$classe)
+cm<-confusionMatrix(predict_gbm, val$classe)
+cm
 ```
 
 ## Conclusion
@@ -94,5 +97,6 @@ test2[,52]<-as.numeric(test2[,52])
 test2[,53]<-as.numeric(test2[,53])
 levels(test2$new_window)<-levels(train3$new_window)
 #Apply random forest to test dataset
-predict(model_rf,newdata=test2)
+p<-predict(model_rf,newdata=test2)
+p
 ```
