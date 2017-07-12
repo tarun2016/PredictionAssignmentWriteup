@@ -1,0 +1,98 @@
+---
+title: 'Peer-graded Assignment: Prediction Assignment Writeup'
+author: "Tarun Panwar"
+date: "July 12, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit  group of enthusiasts  take measurements about themselves regularly to improve their health, to find patterns in their behavior.Goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants and predict how well they perform the exercises.. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways.For more information : http://groupware.les.inf.puc-rio.br/har
+
+## Data 
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+## Load Data
+```{r}
+train<-read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"), na.strings = c('', 'NA'))
+test<-read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"), na.strings = c('', 'NA'))
+```
+
+
+## Prepare Data
+```{r}
+#Remove columns containing more than 50% NA values
+train1<-train[,!sapply(train,function(x){sum(is.na(x))>.5*nrow(train)})]
+test1<-test[,!sapply(test,function(x){sum(is.na(x))>.5*nrow(test)})]
+#Remove columns that are irrelevent
+train2<-train1[,-c(1:5,7)]
+test2<-test1[,-c(1:5,7,60)]
+```
+
+## Data Partioning
+```{r}
+idx<-sample(1:nrow(train2),.7*nrow(train2))
+train3<-train2[idx,]
+val<-train2[-idx,]
+```
+
+## Exploratory data analysis
+```{r}
+head(train2)
+str(train2)
+```
+
+
+## Build Prediction Model
+
+###(a)Classification Tree
+```{r}
+library(rpart,quietly = TRUE)
+library(caret,quietly = TRUE)
+mod_class<- rpart(classe ~ ., data=train3, method="class")
+predicted_cf <- predict(mod_class, val[,-54], type="class")
+#Check confusion Matrix
+confusionMatrix(predicted_cf,val$classe)
+```
+
+###(b)Random Forest
+```{r}
+library(randomForest,quietly = TRUE)
+model_rf = randomForest(classe ~ ., data = train3)
+predicted_rf <- predict(model_rf, val[,-54], type="class")
+#Check confusion Matrix
+confusionMatrix(predicted_rf,val$classe)
+```
+
+###(c) Generalized Boosted Model
+```{r}
+control_gbm <- trainControl(method = "repeatedcv", number = 5, repeats = 1)
+model_gbm  <- train(classe ~ ., data=train3, method = "gbm",trControl = control_gbm, verbose =FALSE)
+predict_gbm <- predict(model_gbm, newdata=val[,-54])
+confusionMatrix(predict_gbm, val$classe)
+```
+
+## Conclusion
+From the three models,Random Forest,Classification Tree and generalized Boosted Model,Random forest perfroms best with accuracy of 0.9968.
+Applying random forest on test dataset
+```{r}
+#Change data type of test dataset
+#which(sapply(train3[,-54],class)!=sapply(test2,class))
+test2[,40]<-as.numeric(test2[,40])
+test2[,52]<-as.numeric(test2[,52])
+test2[,53]<-as.numeric(test2[,53])
+levels(test2$new_window)<-levels(train3$new_window)
+#Apply random forest to test dataset
+predict(model_rf,newdata=test2)
+```
